@@ -1,5 +1,5 @@
 default:
-	node build.js build
+	node build.js
 
 %:
 	node build.js ${MAKECMDGOALS}

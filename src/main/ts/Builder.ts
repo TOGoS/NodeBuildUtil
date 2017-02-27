@@ -206,7 +206,7 @@ class Builder {
 		});
 	}
 
-	public processCommandLine(argv:string[]):Promise<void> {
+	public processArgvAndBuild(argv:string[]):Promise<void> {
 		let buildList = [];
 		let operation = 'build';
 		let verbosity = 100;
@@ -248,7 +248,7 @@ class Builder {
 	}
 
 	protected processCommandLineAndSetExitCode(argv:string[]) {
-		this.processCommandLine(argv).then( () => {
+		this.processArgvAndBuild(argv).then( () => {
 			this.logger.log("Build completed");
 		}, (err:Error) => {
 			console.error("Error!", err.message, err.stack);
