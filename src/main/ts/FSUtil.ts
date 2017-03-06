@@ -2,7 +2,6 @@
 ///<reference path="Promise.d.ts"/>
 
 import * as fs from 'fs';
-import { RESOLVED_VOID_PROMISE, voidify } from './promises';
 
 type FilePath = string;
 type PlzIgnore = any;
@@ -89,7 +88,7 @@ export function unlink( file:FilePath ):Promise<void> {
 
 export function rmRf( fileOrDir:FilePath|string[] ):Promise<void> {
 	if( typeof fileOrDir == 'object' ) {
-		return voidify(Promise.all(fileOrDir.map(rmRf)));
+		return Promise.all(fileOrDir.map(rmRf)).then( () => {} );
 	}
 	return stat(fileOrDir).then( (stats) => {
 		if( stats.isDirectory() ) {
@@ -134,7 +133,7 @@ export function mkdir( dir:FilePath ):Promise<FilePath> {
 
 export function mkdirR( dir:FilePath ):Promise<any> {
 	let comps = dir.split('/');
-	let prom:Promise<void> = RESOLVED_VOID_PROMISE;
+	let prom:Promise<void> = Promise.resolve();
 	for( let i=1; i<=comps.length; ++i ) {
 		prom = prom.then( () => {
 			mkdir(comps.slice(0,i).join('/'));
