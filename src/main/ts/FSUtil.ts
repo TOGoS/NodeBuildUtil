@@ -131,13 +131,11 @@ export function mkdir( dir:FilePath ):Promise<FilePath> {
 	});
 }
 
-export function mkdirR( dir:FilePath ):Promise<any> {
+export function mkdirR( dir:FilePath ):Promise<PlzIgnore> {
 	let comps = dir.split('/');
-	let prom:Promise<void> = Promise.resolve();
+	let prom:Promise<PlzIgnore> = Promise.resolve();
 	for( let i=1; i<=comps.length; ++i ) {
-		prom = prom.then( () => {
-			mkdir(comps.slice(0,i).join('/'));
-	 	} );
+		prom = prom.then( () => mkdir(comps.slice(0,i).join('/')) );
 	}
 	return prom;
 }
