@@ -132,10 +132,16 @@ export function mkdir( dir:FilePath ):Promise<FilePath> {
 }
 
 export function mkdirR( dir:FilePath ):Promise<PlzIgnore> {
+	if( dir == '' ) return Promise.resolve();
+	let prefix = '';
+	if( dir[0] == '/' ) {
+		dir = dir.substr(1);
+		prefix = '/';
+	}
 	let comps = dir.split('/');
 	let prom:Promise<PlzIgnore> = Promise.resolve();
 	for( let i=1; i<=comps.length; ++i ) {
-		prom = prom.then( () => mkdir(comps.slice(0,i).join('/')) );
+		prom = prom.then( () => mkdir(prefix+comps.slice(0,i).join('/')) );
 	}
 	return prom;
 }
