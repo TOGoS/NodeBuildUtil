@@ -1,6 +1,7 @@
 "use strict";
 var Logger_1 = require("./Logger");
 var child_process = require("child_process");
+var fs = require('fs');
 var ExternalProcessRunner = (function () {
     function ExternalProcessRunner() {
         this.logger = Logger_1.NULL_LOGGER;
@@ -106,7 +107,7 @@ var ExternalProcessRunner = (function () {
                 }
         });
         
-        return this.npmCommandPromise = findNpmCliJsPromises.then( () => this._findWorkingProgram(alternatives, ['-v']) );
+        return this.npmCommandPromise = findNpmCliJsPromises.then( () => this.findWorkingProgram(alternatives, ['-v']) );
 	}
 	ExternalProcessRunner.prototype.npm = function (args, opts) {
 		return this.figureNpmCommand().then( (npmCommand) => {
