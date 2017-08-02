@@ -17,7 +17,7 @@ export function stat( file:FilePath ):Promise<fs.Stats> {
 
 export function readFile( file:FilePath, options:string|{encoding?:string, flag?:string}={} ):Promise<Buffer|string> {
 	return new Promise( (resolve,reject) => {
-		fs.readFile(file, options, (err,content) => {
+		fs.readFile(file, options, (err:Error,content:Buffer|string) => {
 			if( err ) reject(err);
 			else resolve(content);
 		})
