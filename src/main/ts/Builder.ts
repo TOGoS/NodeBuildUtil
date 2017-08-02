@@ -49,6 +49,11 @@ interface BuildTarget {
 	isDirectory?: boolean;
 }
 
+interface PrereqNameWithMtime {
+	name : string;
+	mtime : Date;
+}
+
 class Builder {
 	/**
 	 * List of things to always consider prereqs,
@@ -124,15 +129,15 @@ class Builder {
 		let prereqSet = this.getTargetPrereqSet(target);
 		let prereqStackTrace = stackTrace.concat( targetName )
 		let latestPrereqMtime = undefined;
-		let prereqAndMtimePromz:Promise<[string,Date]>[] = [];
+		let prereqAndMtimePromz:Promise<PrereqNameWithMtime>[] = [];
 		for( let prereq in prereqSet ) {
 			prereqAndMtimePromz.push(this.build( prereq, prereqStackTrace ).then( () => {
-				return mtimeR(prereq).then( (mt) => [prereq, mt] );
+				return mtimeR(prereq).then( (mtime:Date) => ({name:prereq, mtime}) );
 			}));
 		}
 		
 		return targetMtimePromise.then<void>( (targetMtime) => {
-			return Promise.all(prereqAndMtimePromz).then( (prereqsAndMtimes:[string,Date][]):Promise<void> => {
+			return Promise.all(prereqAndMtimePromz).then( (prereqsAndMtimes:PrereqNameWithMtime[]):Promise<void> => {
 				let needRebuild;
 				if( targetMtime == undefined ) {
 					this.logger.log("Mtime of "+targetName+" is undefined; need rebuild!");
@@ -141,8 +146,8 @@ class Builder {
 					needRebuild = false;
 					for( let m in prereqsAndMtimes ) {
 						let prereqAndMtime = prereqsAndMtimes[m];
-						let prereqName = prereqAndMtime[0];
-						let prereqMtime = prereqAndMtime[1];
+						let prereqName = prereqAndMtime.name;
+						let prereqMtime = prereqAndMtime.mtime;
 						if( prereqMtime == undefined || targetMtime == undefined || prereqMtime > targetMtime ) {
 							this.logger.log("OUT-OF-DATE: "+prereqName+" is newer than "+targetName+"; need to rebuild ("+prereqMtime+" > "+targetMtime+")");
 							needRebuild = true;
