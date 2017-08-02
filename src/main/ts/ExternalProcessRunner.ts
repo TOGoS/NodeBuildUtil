@@ -84,7 +84,7 @@ export default class ExternalProcessRunner {
 			['sh', '-c'], // Unix!
 		];
 		
-		return this.shellCommandPromise = this.findWorkingProgram(alternatives, ['exit 0']);
+		return this.shellCommandPromise = this.findWorkingProgram(alternatives, ['exit 0'], 0, 'shell');
 	}
 
 	public npmCommandPromise:Promise<ExternalCommand>|undefined = undefined;
@@ -116,7 +116,7 @@ export default class ExternalProcessRunner {
 			}
 		});
 		
-		return this.npmCommandPromise = findNpmCliJsPromise.then( () => this.findWorkingProgram(alternatives, ['-v']) );
+		return this.npmCommandPromise = findNpmCliJsPromise.then( () => this.findWorkingProgram(alternatives, ['-v'], 0, 'npm') );
 	}
 
 	public figureNodeCommand():Promise<ExternalCommand> {
