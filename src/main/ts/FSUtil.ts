@@ -156,12 +156,11 @@ export function cpR( src:FilePath, dest:FilePath ):Promise<PlzIgnore> {
 		if( srcStat.isDirectory() ) {
 			let cpPromise:Promise<any> = mkdir(dest);
 			return readDir(src).then( (files) => {
+				let subPromises:Promise<PlzIgnore>[] = [];
 				for( let f in files ) {
-					cpPromise = cpPromise.then( () => {
-						cpR( src+"/"+files[f], dest+"/"+files[f] );
-					});
+					subPromises.push(cpR( src+"/"+files[f], dest+"/"+files[f] ));
 				};
-				return cpPromise;
+				return Promise.all(subPromises);
 			});
 		} else {
 			return cp( src, dest );
