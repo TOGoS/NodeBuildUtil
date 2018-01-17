@@ -154,14 +154,14 @@ export function mkParentDirs( file:FilePath ):Promise<PlzIgnore> {
 export function cpR( src:FilePath, dest:FilePath ):Promise<PlzIgnore> {
 	return stat(src).then( (srcStat) => {
 		if( srcStat.isDirectory() ) {
-			let cpPromise:Promise<any> = mkdir(dest);
-			return readDir(src).then( (files) => {
+			let mkdirPromise:Promise<any> = mkdir(dest);
+			return readDir(src).then( (files) => mkdirPromise.then(() => {
 				let subPromises:Promise<PlzIgnore>[] = [];
 				for( let f in files ) {
 					subPromises.push(cpR( src+"/"+files[f], dest+"/"+files[f] ));
 				};
 				return Promise.all(subPromises);
-			});
+			}));
 		} else {
 			return cp( src, dest );
 		}
