@@ -7,18 +7,10 @@
 ///<reference path="Promise.d.ts"/>
 
 import * as fs from 'fs';
+import { RESOLVED_VOID_PROMISE_CALLBACK } from './promises';
 
 type FilePath = string;
 type PlzIgnore = any;
-
-/**
- * Turn a Promise<whatever> into a Promise<void>
- * (in a way that incurs some runtime cost but is probably safer
- * than just casting because it prevents callers from accidentally
- * using a value that they shouldn't)
- * by doing: .then(ignoreResult).
- */
-function ignoreResult() {}
 
 export function stat( file:FilePath ):Promise<fs.Stats> {
 	return new Promise( (resolve,reject) => {
