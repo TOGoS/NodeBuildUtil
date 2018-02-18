@@ -103,25 +103,26 @@ export default class ExternalProcessRunner {
 		// Not so on windows!
 		// We'll look for npm-cli.js by iterating over everything in %Path%
 		
-		let alternatives = [
+		let alternatives:ExternalCommand[] = [
 			['npm'],
 		];
 		
 		let envPath = process.env.Path;
 		let envPaths = (envPath != '' && envPath != undefined) ? envPath.split(';') : [];
 		let leftToCheck = envPaths.length;
-		let findNpmCliJsPromise = Promise.resolve();
-		leftToCheck == 0 ? Promise.resolve() : new Promise( (resolve,reject) => {
+		
+		let potentialNpmCommandsPromise:Promise<ExternalCommand[]> = leftToCheck == 0 ? Promise.resolve(alternatives) : new Promise( (resolve,reject) => {
 			for( let p in envPaths ) {
 				let npmCliJsPath = envPaths[p]+'/node_modules/npm/bin/npm-cli.js';
 				fs.stat(npmCliJsPath, (err,stats) => {
 					if( !err ) alternatives.push( ['node', npmCliJsPath] );
-					if( --leftToCheck == 0 ) resolve();
+					if( --leftToCheck == 0 ) resolve(alternatives);
 				});
 			}
 		});
 		
-		return this.npmCommandPromise = findNpmCliJsPromise.then( () => this.findWorkingProgram(alternatives, ['-v'], 0, 'npm') );
+		return this.npmCommandPromise = potentialNpmCommandsPromise.then( (_alternatives:ExternalCommand[]) =>
+			this.findWorkingProgram(alternatives, ['-v'], 0, 'npm') );
 	}
 
 	public figureNodeCommand():Promise<ExternalCommand> {
