@@ -1,3 +1,8 @@
+// This file is maintained as part of NodeBuildUtil: https://github.com/TOGoS/NodeBuildUtil
+// If you're making fixes and want to make sure they get merged upstream,
+// PR to that project.
+// Otherwise, feel free to remove this comment.
+
 import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as fsutil from './FSUtil';
