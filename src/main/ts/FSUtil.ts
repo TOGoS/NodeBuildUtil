@@ -21,9 +21,9 @@ export function stat( file:FilePath ):Promise<fs.Stats> {
 	});
 }
 
-export function readFile( file:FilePath, options:string|{encoding?:string, flag?:string}={} ):Promise<Buffer|string> {
+export function readFile( file:FilePath, options:{encoding?:string, flag?:string}={} ):Promise<Buffer|string> {
 	return new Promise( (resolve,reject) => {
-		fs.readFile(file, options, (err:Error,content:Buffer|string) => {
+		fs.readFile(file, options, (err:Error,content:Buffer) => {
 			if( err ) reject(err);
 			else resolve(content);
 		})
@@ -39,8 +39,25 @@ export function writeFile( file:FilePath, data:string|Uint8Array ):Promise<FileP
 	});
 }
 
-export function readFileToUint8Array( file:FilePath, options:string|{encoding?:string, flag?:string}={} ):Promise<Uint8Array> {
+export function readFileToString( file:FilePath, options:{encoding?:string|undefined, flag?:string}={} ):Promise<string> {
+	const trueOptions = {
+		encoding: options.encoding || "utf8",
+		flag: options.flag
+	};
+	return readFile(file,trueOptions).then( (content) => {
+		// Shouldn't happen, since we're not allowing encoding to be specified, but just in case we screw up:
+		if( typeof content != 'string' ) return Promise.reject(new Error("File not read as a string!"));
+		// Supposedly Buffer acts as a Uint8Array, so we can just return it.
+		return Promise.resolve(content);
+	});
+}
+
+export function readFileToUint8Array( file:FilePath, options:{flag?:string}={} ):Promise<Uint8Array> {
+	if( (<any>options).encoding ) {
+		return Promise.reject(new Error("Why you passing 'encoding' to readFileToUint8Array"));
+	}
 	return readFile(file,options).then( (content) => {
+		// Shouldn't happen, since we're not allowing encoding to be specified, but just in case we screw up:
 		if( typeof content == 'string' ) return Promise.reject(new Error("File read as a string!"));
 		// Supposedly Buffer acts as a Uint8Array, so we can just return it.
 		return Promise.resolve(content);
@@ -166,10 +183,10 @@ export function cpR( src:FilePath, dest:FilePath ):Promise<PlzIgnore> {
 				for( let f in files ) {
 					subPromises.push(cpR( src+"/"+files[f], dest+"/"+files[f] ));
 				};
-				return Promise.all(subPromises).then(ignoreResult);
+				return Promise.all(subPromises).then(RESOLVED_VOID_PROMISE_CALLBACK);
 			}));
 		} else {
-			return cp( src, dest ).then(ignoreResult);
+			return cp( src, dest ).then(RESOLVED_VOID_PROMISE_CALLBACK);
 		}
 	});
 }
