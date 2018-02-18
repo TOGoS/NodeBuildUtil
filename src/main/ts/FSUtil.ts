@@ -6,6 +6,15 @@ import * as fs from 'fs';
 type FilePath = string;
 type PlzIgnore = any;
 
+/**
+ * Turn a Promise<whatever> into a Promise<void>
+ * (in a way that incurs some runtime cost but is probably safer
+ * than just casting because it prevents callers from accidentally
+ * using a value that they shouldn't)
+ * by doing: .then(ignoreResult).
+ */
+function ignoreResult() {}
+
 export function stat( file:FilePath ):Promise<fs.Stats> {
 	return new Promise( (resolve,reject) => {
 		fs.stat(file, (err,stats) => {
@@ -152,7 +161,7 @@ export function mkParentDirs( file:FilePath ):Promise<PlzIgnore> {
 }
 
 export function cpR( src:FilePath, dest:FilePath ):Promise<PlzIgnore> {
-	return stat(src).then( (srcStat) => {
+	return stat(src).then( (srcStat:fs.Stats) => {
 		if( srcStat.isDirectory() ) {
 			let mkdirPromise:Promise<any> = mkdir(dest);
 			return readDir(src).then( (files) => mkdirPromise.then(() => {
@@ -160,10 +169,10 @@ export function cpR( src:FilePath, dest:FilePath ):Promise<PlzIgnore> {
 				for( let f in files ) {
 					subPromises.push(cpR( src+"/"+files[f], dest+"/"+files[f] ));
 				};
-				return Promise.all(subPromises);
+				return Promise.all(subPromises).then(ignoreResult);
 			}));
 		} else {
-			return cp( src, dest );
+			return cp( src, dest ).then(ignoreResult);
 		}
 	});
 }
