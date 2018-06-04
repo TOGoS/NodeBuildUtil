@@ -21,6 +21,7 @@ let bb = new (_Builder.default)();
 bb.globalPrereqs = ['build.js'];
 bb.targets = {
 	'node_modules': {
+		description: "The place where NPM puts modules.",
 		invoke: (ctx) => {
 			return _FSUtil.stat('node_modules/typescript/bin/tsc').catch( (err) => {
 				return ctx.builder.npm(['install']);
@@ -31,6 +32,7 @@ bb.targets = {
 		isDirectory: true,
 	},
 	'target/cjs': {
+		description: "Compiled JavaScript ends up in here.",
 		prereqs: ['node_modules','src/main'],
 		invoke: (ctx) => {
 			return ctx.builder.node(['node_modules/typescript/bin/tsc','-p','src/main/ts/cjs.es5.tsconfig.json']);
@@ -38,6 +40,7 @@ bb.targets = {
 		isDirectory: true,
 	},
 	'clean': {
+		description: "Remove generated files",
 		invoke: (ctx) => {
 			return _FSUtil.rmRf(['node_modules','target']);
 		}

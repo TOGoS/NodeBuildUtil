@@ -47,6 +47,7 @@ interface BuildContext {
 }
 
 interface BuildTarget {
+	description?: string;
 	prereqs?: string[];
 	getPrereqs?: () => string[];
 	invoke(ctx:BuildContext):Promise<void>;
@@ -224,6 +225,8 @@ class Builder {
 			let arg = argv[i];
 			if( arg == '--list-targets' ) {
 				operation = 'list-targets';
+			} else if( arg == '--describe-targets' ) {
+				operation = 'describe-targets';
 			} else if( arg == '-v' ) {
 				verbosity = 200;
 			} else {
@@ -244,6 +247,16 @@ class Builder {
 		if( operation == 'list-targets' ) {
 			return this.fetchAllTargets().then( (targets):void => {
 				for( let n in targets ) console.log(n);
+			});
+		} else if( operation == 'describe-targets' ) {
+			return this.fetchAllTargets().then( (targets):void => {
+				// TODO: Print prettier and allowing for multi-line descriptions
+				for( let n in targets ) {
+					let target = targets[n];
+					let text = n;
+					if( target.description ) text += " ; " + target.description;
+					console.log(text);
+				}
 			});
 		} else if( operation == 'build' ) {
 			if( buildList.length == 0 ) buildList.push('default');
