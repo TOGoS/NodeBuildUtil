@@ -17,26 +17,27 @@ Targets' build rules are Javascript functions that return promises.
 
 ### Usage
 
-Copy files in ```NodeBuildUtil/src/main/js/``` to a folder in your project;
+Copy files from ```NodeBuildUtil/src/main/js/``` to a folder in your project;
 conventionally ```YourProject/src/build/js/```.
 
 Create a ```build.js``` with rules for building your various targets.
-This can reference the builder classes like so:
+Start with the following boilerplate
+(assuming the NodeBuildUtil classes are in ```src/build/js```):
 
 ```javascript
+#!/usr/bin/env node
+"use strict";
+
 let _Builder;
 let _FSUtil;
 
 _Builder = require('./src/build/js/Builder');
 _FSUtil = require('./src/build/js/FSUtil');
-```
 
-Add some boilerplate setup code to build.js:
-
-```javascript
 let bb = new (_Builder.default)();
 
-bb.globalPrereqs = ['build.js']; // If build.js changes, err on the side of rebuilding things
+// If build.js changes, err on the side of rebuilding things:
+bb.globalPrereqs = ['build.js'];
 ```
 
 Define your build targets.
@@ -71,7 +72,7 @@ Some commonly-used build rules are to invoke npm to create/update ```node_module
 to invoke the TypeScript compiler to turn a folder full of TypeScript files into JavaScript.
 This project's own (build.js)[build.js] provides examples of both.
 
-Add more boilerplate to kick off the process when build.js is executed:
+Some final boilerplate to kick off the process when build.js is executed:
 
 ```javascript
 bb.processArgvAndBuild(process.argv.slice(2)).catch( (err) => {
@@ -103,11 +104,17 @@ $(eval $(call generate_targets))
 ### Building
 
 This project is self-hosting, by which I mean it uses itself to build itself.
+The pre-compiled version is checked into ```src/bootstrap/js```.
+
 If you make changes to this project's TypeScript, run:
 
 ```sh
 node build.js
 ```
 
-When you're done, commit both the TypeScript changes and the
-built files in ```src/bootstrap/js```.
+That will compile to ```target/cjs```, which ```build.js``` will try to load files from.
+If you mess up, you can delete ```target/cjs``` and ```build.js``` will revert
+to loading from ```src/bootstrap/js```.
+
+When you're done, copy your compiled javascript into ```src/bootstrap/js``` amn commit those
+along with the TypeScript changes.
