@@ -70,7 +70,7 @@ bb.targets = {
 
 Some commonly-used build rules are to invoke npm to create/update ```node_modules``` and
 to invoke the TypeScript compiler to turn a folder full of TypeScript files into JavaScript.
-This project's own (build.js)[build.js] provides examples of both.
+This project's own [build.js](build.js) provides examples of both.
 
 Some final boilerplate to kick off the process when build.js is executed:
 
