@@ -116,5 +116,5 @@ That will compile to ```target/cjs```, which ```build.js``` will try to load fil
 If you mess up, you can delete ```target/cjs``` and ```build.js``` will revert
 to loading from ```src/bootstrap/js```.
 
-When you're done, copy your compiled javascript into ```src/bootstrap/js``` amn commit those
+When you're done, copy your compiled javascript into ```src/bootstrap/js``` and commit those
 along with the TypeScript changes.
