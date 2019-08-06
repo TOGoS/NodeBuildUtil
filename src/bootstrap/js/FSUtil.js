@@ -1,6 +1,10 @@
-///<reference types="node" />
-///<reference path="Promise.d.ts"/>
 "use strict";
+// This file is maintained as part of NodeBuildUtil: https://github.com/TOGoS/NodeBuildUtil
+// If you're making fixes and want to make sure they get merged upstream,
+// PR to that project.
+// Otherwise, feel free to remove this comment.
+Object.defineProperty(exports, "__esModule", { value: true });
+///<reference types="node" />
 var fs = require("fs");
 var promises_1 = require("./promises");
 function stat(file) {
@@ -14,6 +18,30 @@ function stat(file) {
     });
 }
 exports.stat = stat;
+/** Recursively walk a directory, applying fileCallback to every non-directory within it.
+ *  The returned promise resolves after all callbacks' returned promises have resolved */
+function walkDir(dirPath, fileCallback) {
+    return readDir(dirPath).then(function (filenames) {
+        var promises = [];
+        var _loop_1 = function (i) {
+            var filename = filenames[i];
+            var path = dirPath + "/" + filename;
+            promises.push(stat(path).then(function (x) {
+                if (x.isDirectory()) {
+                    return walkDir(path, fileCallback);
+                }
+                else {
+                    return fileCallback(path);
+                }
+            }));
+        };
+        for (var i in filenames) {
+            _loop_1(i);
+        }
+        return Promise.all(promises);
+    });
+}
+exports.walkDir = walkDir;
 function readFile(file, options) {
     if (options === void 0) { options = {}; }
     return new Promise(function (resolve, reject) {
@@ -36,9 +64,28 @@ function writeFile(file, data) {
     });
 }
 exports.writeFile = writeFile;
+function readFileToString(file, options) {
+    if (options === void 0) { options = {}; }
+    var trueOptions = {
+        encoding: options.encoding || "utf8",
+        flag: options.flag
+    };
+    return readFile(file, trueOptions).then(function (content) {
+        // Shouldn't happen, since we're not allowing encoding to be specified, but just in case we screw up:
+        if (typeof content != 'string')
+            return Promise.reject(new Error("File not read as a string!"));
+        // Supposedly Buffer acts as a Uint8Array, so we can just return it.
+        return Promise.resolve(content);
+    });
+}
+exports.readFileToString = readFileToString;
 function readFileToUint8Array(file, options) {
     if (options === void 0) { options = {}; }
+    if (options.encoding) {
+        return Promise.reject(new Error("Why you passing 'encoding' to readFileToUint8Array"));
+    }
     return readFile(file, options).then(function (content) {
+        // Shouldn't happen, since we're not allowing encoding to be specified, but just in case we screw up:
         if (typeof content == 'string')
             return Promise.reject(new Error("File read as a string!"));
         // Supposedly Buffer acts as a Uint8Array, so we can just return it.
@@ -104,7 +151,7 @@ function unlink(file) {
 exports.unlink = unlink;
 function rmRf(fileOrDir) {
     if (typeof fileOrDir == 'object') {
-        return promises_1.voidify(Promise.all(fileOrDir.map(rmRf)));
+        return Promise.all(fileOrDir.map(rmRf)).then(function () { });
     }
     return stat(fileOrDir).then(function (stats) {
         if (stats.isDirectory()) {
@@ -152,15 +199,20 @@ function mkdir(dir) {
 }
 exports.mkdir = mkdir;
 function mkdirR(dir) {
+    if (dir == '')
+        return Promise.resolve();
+    var prefix = '';
+    if (dir[0] == '/') {
+        dir = dir.substr(1);
+        prefix = '/';
+    }
     var comps = dir.split('/');
-    var prom = promises_1.RESOLVED_VOID_PROMISE;
-    var _loop_1 = function (i) {
-        prom = prom.then(function () {
-            mkdir(comps.slice(0, i).join('/'));
-        });
+    var prom = Promise.resolve();
+    var _loop_2 = function (i) {
+        prom = prom.then(function () { return mkdir(prefix + comps.slice(0, i).join('/')); });
     };
     for (var i = 1; i <= comps.length; ++i) {
-        _loop_1(i);
+        _loop_2(i);
     }
     return prom;
 }
@@ -173,19 +225,18 @@ exports.mkParentDirs = mkParentDirs;
 function cpR(src, dest) {
     return stat(src).then(function (srcStat) {
         if (srcStat.isDirectory()) {
-            var cpPromise_1 = mkdir(dest);
-            return readDir(src).then(function (files) {
+            var mkdirPromise_1 = mkdir(dest);
+            return readDir(src).then(function (files) { return mkdirPromise_1.then(function () {
+                var subPromises = [];
                 for (var f in files) {
-                    cpPromise_1 = cpPromise_1.then(function () {
-                        cpR(src + "/" + files[f], dest + "/" + files[f]);
-                    });
+                    subPromises.push(cpR(src + "/" + files[f], dest + "/" + files[f]));
                 }
                 ;
-                return cpPromise_1;
-            });
+                return Promise.all(subPromises).then(promises_1.RESOLVED_VOID_PROMISE_CALLBACK);
+            }); });
         }
         else {
-            return cp(src, dest);
+            return cp(src, dest).then(promises_1.RESOLVED_VOID_PROMISE_CALLBACK);
         }
     });
 }
@@ -209,8 +260,9 @@ function mtimeR(fileOrDir) {
                 return Promise.all(mtimePromz).then(function (mtimes) {
                     var maxMtime = stats.mtime;
                     for (var m in mtimes) {
-                        if (mtimes[m] != undefined && mtimes[m] > maxMtime) {
-                            maxMtime = mtimes[m];
+                        var mtime = mtimes[m];
+                        if (mtime != undefined && mtime > maxMtime) {
+                            maxMtime = mtime;
                         }
                     }
                     return maxMtime;

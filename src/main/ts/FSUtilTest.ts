@@ -51,7 +51,7 @@ let prom = Promise.resolve();
 for( let testName in tests ) {
 	const testProm = tests[testName]();
 	prom = prom.then( ()=>testProm ).then( () => {
-		console.log("FSUtilTest."+testName+": Okay");
+		//console.log("FSUtilTest."+testName+": Okay");
 	}, (err:Error) => {
 		console.error("FSUtilTest."+testName+": "+err.stack);
 		process.exitCode = 1;

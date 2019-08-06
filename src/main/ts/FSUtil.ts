@@ -4,7 +4,6 @@
 // Otherwise, feel free to remove this comment.
 
 ///<reference types="node" />
-///<reference path="Promise.d.ts"/>
 
 import * as fs from 'fs';
 import { RESOLVED_VOID_PROMISE_CALLBACK } from './promises';
@@ -18,6 +17,28 @@ export function stat( file:FilePath ):Promise<fs.Stats> {
 			if( err ) reject(err);
 			else resolve(stats);
 		})
+	});
+}
+
+type WalkCallback = (path:FilePath) => any;
+
+/** Recursively walk a directory, applying fileCallback to every non-directory within it.
+ *  The returned promise resolves after all callbacks' returned promises have resolved */
+export function walkDir(dirPath:FilePath, fileCallback:WalkCallback):Promise<unknown> {
+	return readDir(dirPath).then( filenames => {
+		let promises = [];
+		for( let i in filenames ) {
+			const filename = filenames[i];
+			const path = dirPath+"/"+filename;
+			promises.push(stat(path).then( x => {
+				if( x.isDirectory() ) {
+					return walkDir(path, fileCallback);
+				} else {
+					return fileCallback(path);
+				}
+			}));
+		}
+		return Promise.all(promises);
 	});
 }
 
@@ -195,13 +216,13 @@ export function cpRReplacing( src:FilePath, dest:FilePath ):Promise<PlzIgnore> {
 	return rmRf( dest ).then( () => cpR(src,dest) );
 }
 
-export function mtimeR( fileOrDir:FilePath ):Promise<Date> {
+export function mtimeR( fileOrDir:FilePath ):Promise<Date|undefined> {
 	return stat(fileOrDir).then( (stats) => {
 		if( stats.isFile() ) {
 			return stats.mtime;
 		} else if( stats.isDirectory() ) {
 			return readDir(fileOrDir).then( (files) => {
-				let mtimePromz:Promise<Date>[] = [];
+				let mtimePromz:Promise<Date|undefined>[] = [];
 				for( let f in files ) {
 					let fullPath = fileOrDir+"/"+files[f];
 					mtimePromz.push(mtimeR(fullPath));
@@ -209,8 +230,9 @@ export function mtimeR( fileOrDir:FilePath ):Promise<Date> {
 				return Promise.all(mtimePromz).then( (mtimes) => {
 					let maxMtime = stats.mtime;
 					for( let m in mtimes ) {
-						if( mtimes[m] != undefined && mtimes[m] > maxMtime ) {
-							maxMtime = mtimes[m];
+						const mtime = mtimes[m];
+						if( mtime != undefined && mtime > maxMtime ) {
+							maxMtime = mtime;
 						}
 					}
 					return maxMtime;

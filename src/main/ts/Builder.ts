@@ -68,7 +68,7 @@ class Builder {
 	public globalPrereqs:string[] = [];
 
 	protected logger:Logger = NULL_LOGGER;
-	protected buildPromises:{[name:string]: Promise<void>} = {};
+	protected buildPromises:{[name:string]: Promise<unknown>} = {};
 	protected epr = new ExternalProcessRunner();
 
 	public constructor(public targets:{[name:string]: BuildTarget}={}) {
@@ -124,7 +124,21 @@ class Builder {
 		return set;
 	}
 
-	public buildTarget( target:BuildTarget, targetName:string, stackTrace:string[] ):Promise<void> {
+	public runUnitTests( dir:FilePath ):Promise<unknown> {
+		return fsutil.walkDir(dir, (path:FilePath) => {
+			if( /.*[Tt]est\.js$/.exec(path) ) {
+				return this.doCmd(["node", path]).then( result => {
+					this.logger.log(path+" ran successfully");
+				}, err => {
+					this.logger.error(path+" failed: "+err.message);
+					return Promise.reject(err);
+				})
+			}
+			return undefined;
+		});
+	}
+
+	public buildTarget( target:BuildTarget, targetName:string, stackTrace:string[] ):Promise<unknown> {
 		let targetMtimePromise = mtimeR(targetName);
 		let prereqNames = target.prereqs || []; // TODO: should use the same logic as
 		if( prereqNames.length == 0 ) {
@@ -142,8 +156,8 @@ class Builder {
 			}));
 		}
 		
-		return targetMtimePromise.then<void>( (targetMtime) => {
-			return Promise.all(prereqAndMtimePromz).then( (prereqsAndMtimes:PrereqNameWithMtime[]):Promise<void> => {
+		return targetMtimePromise.then( (targetMtime) => {
+			return Promise.all(prereqAndMtimePromz).then( (prereqsAndMtimes:PrereqNameWithMtime[]):Promise<unknown> => {
 				let needRebuild;
 				if( targetMtime == undefined ) {
 					this.logger.log("Mtime of "+targetName+" is undefined; need rebuild!");
@@ -182,7 +196,7 @@ class Builder {
 								console.error("Removing "+targetName);
 								return rmRf(targetName).then( () => Promise.reject(err) );
 							}
-							return;
+							return Promise.resolve();
 						});
 					} else {
 						this.logger.log(targetName+" has no build rule; assuming up-to-date");

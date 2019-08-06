@@ -105,6 +105,20 @@ var Builder = /** @class */ (function () {
         toSet(this.globalPrereqs, set);
         return set;
     };
+    Builder.prototype.runUnitTests = function (dir) {
+        var _this = this;
+        return fsutil.walkDir(dir, function (path) {
+            if (/.*[Tt]est\.js$/.exec(path)) {
+                return _this.doCmd(["node", path]).then(function (result) {
+                    _this.logger.log(path + " ran successfully");
+                }, function (err) {
+                    _this.logger.error(path + " failed: " + err.message);
+                    return Promise.reject(err);
+                });
+            }
+            return undefined;
+        });
+    };
     Builder.prototype.buildTarget = function (target, targetName, stackTrace) {
         var _this = this;
         var targetMtimePromise = mtimeR(targetName);
@@ -169,7 +183,7 @@ var Builder = /** @class */ (function () {
                                 console.error("Removing " + targetName);
                                 return rmRf(targetName).then(function () { return Promise.reject(err); });
                             }
-                            return;
+                            return Promise.resolve();
                         });
                     }
                     else {
@@ -244,6 +258,7 @@ var Builder = /** @class */ (function () {
         }
         else if (operation == 'describe-targets') {
             return this.fetchAllTargets().then(function (targets) {
+                // TODO: Print prettier and allowing for multi-line descriptions
                 for (var n in targets) {
                     var target = targets[n];
                     var text = n;

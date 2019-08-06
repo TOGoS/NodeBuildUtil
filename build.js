@@ -47,6 +47,12 @@ bb.targets = {
 	},
 	'default': {
 		prereqs: ['target/cjs']
+	},
+	'run-unit-tests': {
+		prereqs: ['target/cjs'],
+		invoke: (ctx) => {
+			return ctx.builder.runUnitTests("target/cjs")
+		}
 	}
 };
 
